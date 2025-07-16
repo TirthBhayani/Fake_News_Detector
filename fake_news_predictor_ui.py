@@ -5,7 +5,7 @@ from sklearn.linear_model import LogisticRegression
 
 @st.cache_resource
 def load_model():
-    file_path = "fake_or_real_news.csv"  # File should be in the same directory
+    file_path = "fake_or_real_news.csv"
 
     try:
         df = pd.read_csv(file_path, encoding="utf-8", on_bad_lines='skip')
@@ -13,14 +13,23 @@ def load_model():
         st.error(f"❌ Failed to read CSV: {e}")
         st.stop()
 
-    # Clean column headers
+    # Clean headers
     df.columns = df.columns.str.strip().str.lower()
-    st.write("✅ Columns loaded:", df.columns.tolist())  # Debug step
+    st.write("✅ Columns loaded:", df.columns.tolist())
 
-    # Check required columns
+    # Check for required columns
     if 'text' not in df.columns or 'label' not in df.columns:
-        st.error("❌ 'text' and 'label' columns not found. Please check your dataset.")
+        st.error("❌ 'text' and 'label' columns not found.")
         st.stop()
+
+    # Remove rows with missing labels or text
+    df = df.dropna(subset=['text', 'label'])
+
+    # Normalize label values to lowercase
+    df['label'] = df['label'].str.strip().str.lower()
+
+    # Only keep rows with valid labels
+    df = df[df['label'].isin(['real', 'fake'])]
 
     # Encode labels
     df['label'] = df['label'].map({'fake': 0, 'real': 1})
@@ -28,15 +37,19 @@ def load_model():
     X = df['text']
     y = df['label']
 
-    # Vectorization
+    # Final sanity check: make sure no NaNs
+    if y.isnull().any():
+        st.error("❌ Error: Label column still contains NaN after cleaning.")
+        st.stop()
+
     vectorizer = TfidfVectorizer(stop_words='english', max_df=0.7)
     X_vec = vectorizer.fit_transform(X)
 
-    # Model Training
     model = LogisticRegression()
     model.fit(X_vec, y)
 
     return model, vectorizer
+
 
 model, vectorizer = load_model()
 
