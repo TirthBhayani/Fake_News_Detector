@@ -15,7 +15,7 @@ def load_model():
 
     # Clean headers
     df.columns = df.columns.str.strip().str.lower()
-    st.write("✅ Columns loaded:", df.columns.tolist())
+    # st.write("✅ Columns loaded:", df.columns.tolist())
 
     # Check for required columns
     if 'text' not in df.columns or 'label' not in df.columns:
