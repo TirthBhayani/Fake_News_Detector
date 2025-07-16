@@ -5,15 +5,34 @@ from sklearn.linear_model import LogisticRegression
 
 @st.cache_resource
 def load_model():
-    df = pd.read_csv("fake_or_real_news.csv")
-    df['label'] = df['label'].map({'FAKE': 0, 'REAL': 1})
+    file_path = "fake_or_real_news.csv"  # File should be in the same directory
+
+    try:
+        df = pd.read_csv(file_path, encoding="utf-8", on_bad_lines='skip')
+    except Exception as e:
+        st.error(f"❌ Failed to read CSV: {e}")
+        st.stop()
+
+    # Clean column headers
+    df.columns = df.columns.str.strip().str.lower()
+    st.write("✅ Columns loaded:", df.columns.tolist())  # Debug step
+
+    # Check required columns
+    if 'text' not in df.columns or 'label' not in df.columns:
+        st.error("❌ 'text' and 'label' columns not found. Please check your dataset.")
+        st.stop()
+
+    # Encode labels
+    df['label'] = df['label'].map({'fake': 0, 'real': 1})
 
     X = df['text']
     y = df['label']
 
+    # Vectorization
     vectorizer = TfidfVectorizer(stop_words='english', max_df=0.7)
     X_vec = vectorizer.fit_transform(X)
 
+    # Model Training
     model = LogisticRegression()
     model.fit(X_vec, y)
 
